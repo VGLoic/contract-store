@@ -1,0 +1,66 @@
+name: Main Build
+on:
+  push:
+    branches:
+      - main
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    name: Setup
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          cache: npm
+      - run: npm ci
+  test:
+    runs-on: ubuntu-latest
+    needs: [setup]
+    name: Test
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [test]
+    name: Coverage
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:cover
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+  publish:
+    runs-on: ubuntu-latest
+    name: Versionning and Publish
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
