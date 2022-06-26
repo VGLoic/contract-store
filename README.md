@@ -12,11 +12,11 @@ The recommended way to use Contract-Store with an application is to install it a
 
 Using `npm`
 ```console
-npm install contract-store@alpha --save-dev
+npm install contract-store@alpha
 ```
 Or using `yarn`
 ```console
-yarn add contract-store@alpha --dev
+yarn add contract-store@alpha
 ```
 
 Then, one can start storing and using the needed **ABIs** or **deployments**
@@ -106,7 +106,7 @@ const abi = store.getAbi(networks.goerli, "FOO");
 const thisWillFail = store.getAbi(networks.mainnet, "FOO");
 ```
 
-Some ABI deserves to be available on every networks, for this reason, the global ABIs have been introduced. A global ABI is the same on every network and can be registerred, updated or deleted using dedicated methods
+Some ABI deserves to be available on every networks, for this reason, the global ABIs have been introduced. A global ABI is the same on every network and can be registered, updated or deleted using dedicated methods
 ```ts
 // Register an ABI globally, it will be available for every configured networks in the store
 store.registerGlobalAbi("FOO", MY_ABI);
