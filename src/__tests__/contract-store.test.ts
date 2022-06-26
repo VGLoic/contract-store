@@ -3,7 +3,6 @@ import ERC20 from "../default-abis/erc20.json";
 import ERC721 from "../default-abis/erc721.json";
 import ERC1155 from "../default-abis/erc1155.json";
 
-
 describe("Contract Store", () => {
   const testAbi = [
     {
@@ -32,7 +31,7 @@ describe("Contract Store", () => {
       type: "event",
     },
   ];
-  
+
   const otherTestAbi = [
     ...testAbi,
     {
@@ -81,32 +80,32 @@ describe("Contract Store", () => {
   describe("ABI management", () => {
     test("it should allow to register, update and delete an ABI", () => {
       const store = new ContractStore(1);
-  
+
       store.registerAbi("FOO", testAbi);
       expect(store.getAbi("FOO")).toEqual(testAbi);
-  
+
       store.updateAbi("FOO", otherTestAbi);
-  
+
       expect(store.getAbi("FOO")).toEqual(otherTestAbi);
-  
+
       store.deleteAbi("FOO");
-  
+
       expect(() => store.getAbi("FOO")).toThrow();
     });
-  
+
     test("it should not allow to register an ABI under an already used key", () => {
       const store = new ContractStore(1);
       store.registerAbi("FOO", testAbi);
       expect(store.getAbi("FOO")).toEqual(testAbi);
-  
+
       expect(() => store.registerAbi("FOO", otherTestAbi)).toThrow();
     });
-  
+
     test("it should not allow to update an ABI if it is not registered", () => {
       const store = new ContractStore(1);
       expect(() => store.updateAbi("FOO", otherTestAbi)).toThrow();
     });
-  
+
     test("it should not allow to delete an ABI if it is used in a deployment", () => {
       const store = new ContractStore(1);
       store.registerContract("FOO", {
@@ -115,27 +114,27 @@ describe("Contract Store", () => {
       });
       expect(() => store.deleteAbi("FOO")).toThrow();
     });
-  })
+  });
 
   describe("deployment management", () => {
     test("it should allow to register, update, and delete a deployment using an existing ABI", () => {
       const store = new ContractStore(1);
-      
+
       store.registerDeployment("FOO", {
         address,
-        abiKey: "ERC20"
+        abiKey: "ERC20",
       });
       expect(store.getAddress("FOO")).toEqual(address);
       expect(store.getContract("FOO")).toEqual({
         address,
-        abi: ERC20
+        abi: ERC20,
       });
 
-      store.updateDeployment('FOO', "ERC721");
+      store.updateDeployment("FOO", "ERC721");
       expect(store.getAddress("FOO")).toEqual(address);
       expect(store.getContract("FOO")).toEqual({
         address,
-        abi: ERC721
+        abi: ERC721,
       });
 
       store.deleteDeployment("FOO");
@@ -145,39 +144,43 @@ describe("Contract Store", () => {
 
     test("it should allow to register an ABI and a deployment at once", () => {
       const store = new ContractStore(1);
-      
+
       store.registerContract("FOO", {
         address,
-        abi: testAbi
+        abi: testAbi,
       });
       expect(store.getAddress("FOO")).toEqual(address);
       expect(store.getAbi("FOO")).toEqual(testAbi);
       expect(store.getContract("FOO")).toEqual({
         address,
-        abi: testAbi
+        abi: testAbi,
       });
     });
 
     test("it should not allow to register a deployment with an already used key", () => {
       const store = new ContractStore(1);
-      
+
       store.registerDeployment("FOO", {
         address,
-        abiKey: "ERC20"
+        abiKey: "ERC20",
       });
-      expect(() => store.registerDeployment('FOO', {
-        address,
-        abiKey: 'ERC721'
-      })).toThrow();
+      expect(() =>
+        store.registerDeployment("FOO", {
+          address,
+          abiKey: "ERC721",
+        })
+      ).toThrow();
     });
 
     test("it should not allow to register a deployment with an unknown ABI key", () => {
       const store = new ContractStore(1);
-      
-      expect(() => store.registerDeployment('FOO', {
-        address,
-        abiKey: 'unknown'
-      })).toThrow();
+
+      expect(() =>
+        store.registerDeployment("FOO", {
+          address,
+          abiKey: "unknown",
+        })
+      ).toThrow();
     });
 
     test("it should not allow to update a deployment with an unknown ABI key", () => {
@@ -185,17 +188,27 @@ describe("Contract Store", () => {
 
       store.registerDeployment("FOO", {
         address,
-        abiKey: "ERC20"
+        abiKey: "ERC20",
       });
-      
-      expect(() => store.updateDeployment('FOO', 'unknown')).toThrow();
+
+      expect(() => store.updateDeployment("FOO", "unknown")).toThrow();
     });
 
     test("it should not allow to update an unknown deployment", () => {
       const store = new ContractStore(1);
-      
-      expect(() => store.updateDeployment('FOO', 'ERC20')).toThrow();
+
+      expect(() => store.updateDeployment("FOO", "ERC20")).toThrow();
+    });
+
+    test("it should allow to retrieve the deployments addresses", () => {
+      const store = new ContractStore(1);
+
+      store.registerDeployment("FOO", {
+        address,
+        abiKey: "ERC20",
+      });
+
+      expect(store.getAddresses()).toEqual([address]);
     });
   });
-
 });

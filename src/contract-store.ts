@@ -20,6 +20,9 @@ export type Options = {
   withoutDefaultABIs?: boolean;
 };
 
+/**
+ * Contract Store for managing ABIs and deployments on a single network
+ */
 export class ContractStore extends EventEmitter {
   public readonly chainId: number;
 
@@ -48,7 +51,8 @@ export class ContractStore extends EventEmitter {
       );
     }
     this.abis[key] = abi;
-    this.emit("abi/registered", { key, abi });
+    this.emit("abi/registered", { key, abi, chainId: this.chainId });
+    return this;
   }
 
   /**
@@ -71,8 +75,13 @@ export class ContractStore extends EventEmitter {
     this.deployments[key] = deployment;
     this.emit("deployment/registered", {
       key,
-      deployment: { address: deployment.address, abiKey: deployment.abiKey },
+      deployment: {
+        address: deployment.address,
+        abiKey: deployment.abiKey,
+        chainId: this.chainId,
+      },
     });
+    return this;
   }
 
   /**
@@ -87,6 +96,7 @@ export class ContractStore extends EventEmitter {
       address: contract.address,
       abiKey: key,
     });
+    return this;
   }
 
   /**
@@ -101,7 +111,8 @@ export class ContractStore extends EventEmitter {
       );
     }
     this.abis[key] = abi;
-    this.emit("abi/updated", { key, abi });
+    this.emit("abi/updated", { key, abi, chainId: this.chainId });
+    return this;
   }
 
   /**
@@ -121,7 +132,8 @@ export class ContractStore extends EventEmitter {
       );
     }
     this.deployments[key].abiKey = abiKey;
-    this.emit("deployment/updated", { key, abiKey });
+    this.emit("deployment/updated", { key, abiKey, chainId: this.chainId });
+    return this;
   }
 
   /**
@@ -131,7 +143,8 @@ export class ContractStore extends EventEmitter {
   public deleteDeployment(key: string) {
     const deployment = this.getDeployment(key);
     delete this.deployments[key];
-    this.emit("deployment/deleted", { key, deployment });
+    this.emit("deployment/deleted", { key, deployment, chainId: this.chainId });
+    return this;
   }
 
   /**
@@ -140,16 +153,25 @@ export class ContractStore extends EventEmitter {
    */
   public deleteAbi(key: string) {
     const abi = this.getAbi(key);
-    const isUsed = Object.values(this.deployments).some(
-      (deployment) => deployment.abiKey === key
-    );
-    if (isUsed) {
+    if (this.isAbiUsed(key)) {
       throw new Error(
         `Unable to delete the abi for key ${key} on chain ID ${this.chainId} as it is used in at least one deployment.`
       );
     }
     delete this.abis[key];
-    this.emit("abi/deleted", { key, abi });
+    this.emit("abi/deleted", { key, abi, chainId: this.chainId });
+    return this;
+  }
+
+  /**
+   * Check if an ABI is used in a deployment
+   * @param key String key of the ABI
+   * @returns True if the ABI is used in a deployment, false otherwise
+   */
+  public isAbiUsed(key: string) {
+    return Object.values(this.deployments).some(
+      (deployment) => deployment.abiKey === key
+    );
   }
 
   /**
@@ -189,6 +211,16 @@ export class ContractStore extends EventEmitter {
   public getAddress(key: string) {
     const deployment = this.getDeployment(key);
     return deployment.address;
+  }
+
+  /**
+   * Get all the addresses
+   * @returns The array of addresses
+   */
+  public getAddresses() {
+    return Object.values(this.deployments).map(
+      (deployment) => deployment.address
+    );
   }
 
   /**
