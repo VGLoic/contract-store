@@ -199,5 +199,16 @@ describe("Contract Store", () => {
 
       expect(() => store.updateDeployment("FOO", "ERC20")).toThrow();
     });
+
+    test("it should allow to retrieve the deployments addresses", () => {
+      const store = new ContractStore(1);
+
+      store.registerDeployment("FOO", {
+        address,
+        abiKey: "ERC20",
+      });
+
+      expect(store.getAddresses()).toEqual([address]);
+    });
   });
 });
