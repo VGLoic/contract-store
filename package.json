@@ -1,7 +1,7 @@
 {
   "name": "contract-store",
   "version": "0.0.1-semantic-release",
-  "description": "A contract store for managing ABIs and deployment addresses.",
+  "description": "Minimalist store in order to manage the various ABIs and deployed contract addresses on multiple networks.",
   "keywords": [
     "ethereum",
     "eth",
