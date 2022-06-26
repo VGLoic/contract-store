@@ -1,5 +1,7 @@
 # Contract Store
 
+[![Coverage Status](https://coveralls.io/repos/github/VGLoic/contract-store/badge.svg?branch=alpha)](https://coveralls.io/github/VGLoic/contract-store?branch=alpha)
+
 **:warning: The package is quite recent, any contributions, issues or feedbacks are welcome :warning:**
 
 Minimalist store in order to manage the various ABIs and deployed contract addresses on multiple networks.

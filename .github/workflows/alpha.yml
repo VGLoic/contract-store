@@ -30,6 +30,10 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run test:cover
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
   publish:
     runs-on: ubuntu-latest
     name: Versionning and Publish
