@@ -21,18 +21,29 @@ export type Options = {
   withoutDefaultABIs?: boolean;
 };
 
-type Network = {
-  abis?: Record<string, unknown>;
-  deployments?: Record<string, unknown>;
+type GenericConfiguration = {
+  abis?: Record<string, ABI>;
+  deployments?: Record<string, Deployment>;
 };
-type GenericConfiguration = Network;
 
 type OriginalDeploymentKey<Config extends GenericConfiguration> = Extract<
   keyof Config["deployments"],
   string
 >;
-type OriginalABIKey<Config extends GenericConfiguration> = Extract<
-  keyof Config["abis"],
+type WithoutDefaultABIs<Opts extends Options | undefined> = Opts extends Options
+  ? Opts["withoutDefaultABIs"] extends true
+    ? true
+    : false
+  : false;
+
+type OriginalABIKey<
+  Config extends GenericConfiguration,
+  Opts extends Options | undefined
+> = Extract<
+  | keyof Config["abis"]
+  | (WithoutDefaultABIs<Opts> extends true
+      ? keyof {}
+      : "ERC20" | "ERC721" | "ERC1155"),
   string
 >;
 
@@ -40,20 +51,33 @@ type OriginalABIKey<Config extends GenericConfiguration> = Extract<
  * Contract Store for managing ABIs and deployments on a single network
  */
 export class ContractStore<
-  OriginalConfig extends GenericConfiguration = { abis: {}; deployments: {} }
+  Opts extends Options | undefined,
+  OriginalConfig extends GenericConfiguration = {}
 > extends EventEmitter {
   public readonly chainId: number;
 
   private abis: Record<string, ABI> = {};
   private deployments: Record<string, Deployment> = {};
 
-  constructor(chainId: number, opts?: Options) {
+  constructor(chainId: number, originalConfig: OriginalConfig, opts?: Opts) {
     super();
     this.chainId = chainId;
     if (!opts?.withoutDefaultABIs) {
       this.registerAbi("ERC20", ERC20);
       this.registerAbi("ERC721", ERC721);
       this.registerAbi("ERC1155", ERC1155);
+    }
+    if (originalConfig.abis) {
+      Object.entries(originalConfig.abis).forEach(([key, abi]) => {
+        this.registerAbi(key, abi);
+      });
+    }
+    if (originalConfig.deployments) {
+      Object.entries(originalConfig.deployments).forEach(
+        ([key, deployment]) => {
+          this.registerDeployment(key, deployment);
+        }
+      );
     }
   }
 
@@ -122,7 +146,7 @@ export class ContractStore<
    * @param key String key of the ABI
    * @param abi New ABI
    */
-  public updateAbi<ABIKey extends OriginalABIKey<OriginalConfig>>(
+  public updateAbi<ABIKey extends OriginalABIKey<OriginalConfig, Opts>>(
     key: LiteralUnion<ABIKey>,
     abi: ABI
   ) {
@@ -143,7 +167,7 @@ export class ContractStore<
    */
   public updateDeployment<
     DeploymentKey extends OriginalDeploymentKey<OriginalConfig>,
-    ABIKey extends OriginalABIKey<OriginalConfig>
+    ABIKey extends OriginalABIKey<OriginalConfig, Opts>
   >(key: LiteralUnion<DeploymentKey>, abiKey: LiteralUnion<ABIKey>) {
     if (!this.deployments[key]) {
       throw new Error(
@@ -177,7 +201,7 @@ export class ContractStore<
    * Delete an ABI, the ABI can not be currently used in a deployment
    * @param key String key of the ABI
    */
-  public deleteAbi<ABIKey extends OriginalABIKey<OriginalConfig>>(
+  public deleteAbi<ABIKey extends OriginalABIKey<OriginalConfig, Opts>>(
     key: LiteralUnion<ABIKey>
   ) {
     const abi = this.getAbi(key);
@@ -196,7 +220,7 @@ export class ContractStore<
    * @param key String key of the ABI
    * @returns True if the ABI is used in a deployment, false otherwise
    */
-  public isAbiUsed<ABIKey extends OriginalABIKey<OriginalConfig>>(
+  public isAbiUsed<ABIKey extends OriginalABIKey<OriginalConfig, Opts>>(
     key: LiteralUnion<ABIKey>
   ) {
     return Object.values(this.deployments).some(
@@ -209,7 +233,7 @@ export class ContractStore<
    * @param key String key of the ABI
    * @returns The ABI
    */
-  public getAbi<ABIKey extends OriginalABIKey<OriginalConfig>>(
+  public getAbi<ABIKey extends OriginalABIKey<OriginalConfig, Opts>>(
     key: LiteralUnion<ABIKey>
   ) {
     const abi = this.abis[key];
