@@ -3,6 +3,7 @@ import { JsonFragment } from "./ethers-type";
 import ERC20 from "./default-abis/erc20.json";
 import ERC721 from "./default-abis/erc721.json";
 import ERC1155 from "./default-abis/erc1155.json";
+import { LiteralUnion } from "./helper-types";
 
 export type ABI = string | readonly (string | JsonFragment)[];
 
@@ -20,10 +21,27 @@ export type Options = {
   withoutDefaultABIs?: boolean;
 };
 
+type Network = {
+  abis?: Record<string, unknown>;
+  deployments?: Record<string, unknown>;
+};
+type GenericConfiguration = Network;
+
+type OriginalDeploymentKey<Config extends GenericConfiguration> = Extract<
+  keyof Config["deployments"],
+  string
+>;
+type OriginalABIKey<Config extends GenericConfiguration> = Extract<
+  keyof Config["abis"],
+  string
+>;
+
 /**
  * Contract Store for managing ABIs and deployments on a single network
  */
-export class ContractStore extends EventEmitter {
+export class ContractStore<
+  OriginalConfig extends GenericConfiguration = { abis: {}; deployments: {} }
+> extends EventEmitter {
   public readonly chainId: number;
 
   private abis: Record<string, ABI> = {};
@@ -104,7 +122,10 @@ export class ContractStore extends EventEmitter {
    * @param key String key of the ABI
    * @param abi New ABI
    */
-  public updateAbi(key: string, abi: ABI) {
+  public updateAbi<ABIKey extends OriginalABIKey<OriginalConfig>>(
+    key: LiteralUnion<ABIKey>,
+    abi: ABI
+  ) {
     if (!this.abis[key]) {
       throw new Error(
         `No ABI for key ${key} and chain ID ${this.chainId} has been found.`
@@ -120,7 +141,10 @@ export class ContractStore extends EventEmitter {
    * @param key String key of the deployment
    * @param abiKey The new ABI key of the deployment
    */
-  public updateDeployment(key: string, abiKey: string) {
+  public updateDeployment<
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig>,
+    ABIKey extends OriginalABIKey<OriginalConfig>
+  >(key: LiteralUnion<DeploymentKey>, abiKey: LiteralUnion<ABIKey>) {
     if (!this.deployments[key]) {
       throw new Error(
         `No deployment for key ${key} and chain ID ${this.chainId} has been found.`
@@ -140,7 +164,9 @@ export class ContractStore extends EventEmitter {
    * Delete a deployment
    * @param key String key of the deployment
    */
-  public deleteDeployment(key: string) {
+  public deleteDeployment<
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig>
+  >(key: LiteralUnion<DeploymentKey>) {
     const deployment = this.getDeployment(key);
     delete this.deployments[key];
     this.emit("deployment/deleted", { key, deployment, chainId: this.chainId });
@@ -151,7 +177,9 @@ export class ContractStore extends EventEmitter {
    * Delete an ABI, the ABI can not be currently used in a deployment
    * @param key String key of the ABI
    */
-  public deleteAbi(key: string) {
+  public deleteAbi<ABIKey extends OriginalABIKey<OriginalConfig>>(
+    key: LiteralUnion<ABIKey>
+  ) {
     const abi = this.getAbi(key);
     if (this.isAbiUsed(key)) {
       throw new Error(
@@ -168,7 +196,9 @@ export class ContractStore extends EventEmitter {
    * @param key String key of the ABI
    * @returns True if the ABI is used in a deployment, false otherwise
    */
-  public isAbiUsed(key: string) {
+  public isAbiUsed<ABIKey extends OriginalABIKey<OriginalConfig>>(
+    key: LiteralUnion<ABIKey>
+  ) {
     return Object.values(this.deployments).some(
       (deployment) => deployment.abiKey === key
     );
@@ -179,7 +209,9 @@ export class ContractStore extends EventEmitter {
    * @param key String key of the ABI
    * @returns The ABI
    */
-  public getAbi(key: string) {
+  public getAbi<ABIKey extends OriginalABIKey<OriginalConfig>>(
+    key: LiteralUnion<ABIKey>
+  ) {
     const abi = this.abis[key];
     if (!abi) {
       throw new Error(
@@ -194,7 +226,9 @@ export class ContractStore extends EventEmitter {
    * @param key String key of the deployment of the contract
    * @returns The address and ABI of the contract
    */
-  public getContract(key: string): Contract {
+  public getContract<
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig>
+  >(key: LiteralUnion<DeploymentKey>): Contract {
     const deployment = this.getDeployment(key);
     const abi = this.getAbi(deployment.abiKey);
     return {
@@ -208,7 +242,9 @@ export class ContractStore extends EventEmitter {
    * @param key String key of the deployment
    * @returns The address of the deployment
    */
-  public getAddress(key: string) {
+  public getAddress<
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig>
+  >(key: LiteralUnion<DeploymentKey>) {
     const deployment = this.getDeployment(key);
     return deployment.address;
   }
@@ -228,7 +264,9 @@ export class ContractStore extends EventEmitter {
    * @param key String key of the deployment
    * @returns The deployment
    */
-  private getDeployment(key: string) {
+  private getDeployment<
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig>
+  >(key: LiteralUnion<DeploymentKey>) {
     const deployment = this.deployments[key];
     if (!deployment) {
       throw new Error(

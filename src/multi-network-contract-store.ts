@@ -3,15 +3,48 @@ import { ABI, Contract, ContractStore, Deployment } from "./contract-store";
 import ERC20 from "./default-abis/erc20.json";
 import ERC721 from "./default-abis/erc721.json";
 import ERC1155 from "./default-abis/erc1155.json";
+import { NumericUnion, LiteralUnion } from "./helper-types";
 
 type MultiNetworkOptions = {
   withoutDefaultABIs?: boolean;
 };
 
+type Network = {
+  abis?: Record<string, unknown>;
+  deployments?: Record<string, unknown>;
+};
+type GenericConfiguration = {
+  globalAbis?: Record<string, unknown>;
+  networks?: Record<number, Network>;
+};
+
+type OriginalGlobalABIKey<Config extends GenericConfiguration> = Extract<
+  keyof Config["globalAbis"],
+  string
+>;
+type OriginalChainId<Config extends GenericConfiguration> = Extract<
+  keyof Config["networks"],
+  number
+>;
+type OriginalDeploymentKey<
+  Config extends GenericConfiguration,
+  ChainId extends OriginalChainId<Config>
+> = Config["networks"][ChainId] extends Network
+  ? Extract<keyof Config["networks"][ChainId]["deployments"], string>
+  : never;
+type OriginalABIKey<
+  Config extends GenericConfiguration,
+  ChainId extends OriginalChainId<Config>
+> = Config["networks"][ChainId] extends Network
+  ? Extract<keyof Config["networks"][ChainId]["abis"], string>
+  : never;
+
 /**
  * Contract store for managing ABIs and deployments on multiple networks
  */
-export class MultiNetworkContractStore extends EventEmitter {
+export class MultiNetworkContractStore<
+  OriginalConfig extends GenericConfiguration
+> extends EventEmitter {
   private stores: Record<number, ContractStore>;
   private globalAbis: Record<string, ABI> = {};
 
@@ -62,7 +95,9 @@ export class MultiNetworkContractStore extends EventEmitter {
    * Remove a network
    * @param chainId Chain ID of the network
    */
-  public removeNetwork(chainId: number) {
+  public removeNetwork<ChainId extends OriginalChainId<OriginalConfig>>(
+    chainId: NumericUnion<ChainId>
+  ) {
     if (!this.stores[chainId]) {
       throw new Error(`Chain ID ${chainId} is not configured.`);
     }
@@ -93,7 +128,10 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param key String key of the ABI
    * @param abi ABI
    */
-  public updateGlobalAbi(key: string, abi: ABI) {
+  public updateGlobalAbi<KeyType extends OriginalGlobalABIKey<OriginalConfig>>(
+    key: LiteralUnion<KeyType>,
+    abi: ABI
+  ) {
     if (!this.globalAbis[key]) {
       throw new Error(`No global ABI for key ${key} has been found.`);
     }
@@ -108,7 +146,9 @@ export class MultiNetworkContractStore extends EventEmitter {
    * Delete a global ABI, replicating the delete in every networks
    * @param key String key of the ABI
    */
-  public deleteGlobalAbi(key: string) {
+  public deleteGlobalAbi<KeyType extends OriginalGlobalABIKey<OriginalConfig>>(
+    key: LiteralUnion<KeyType>
+  ) {
     if (!this.globalAbis[key]) {
       throw new Error(`No global ABI for key ${key} has been found.`);
     }
@@ -133,7 +173,11 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param key String key of the ABI
    * @param abi ABI
    */
-  public registerAbi(chainId: number, key: string, abi: ABI) {
+  public registerAbi<ChainId extends OriginalChainId<OriginalConfig>>(
+    chainId: NumericUnion<ChainId>,
+    key: string,
+    abi: ABI
+  ) {
     if (this.globalAbis[key]) {
       throw new Error(`Key ${key} is already used for a global ABI.`);
     }
@@ -148,8 +192,8 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param deployment.address Address of the contract
    * @param deployment.abiKey String key of the already registered ABI
    */
-  public registerDeployement(
-    chainId: number,
+  public registerDeployement<ChainId extends OriginalChainId<OriginalConfig>>(
+    chainId: NumericUnion<ChainId>,
     key: string,
     deployment: Deployment
   ) {
@@ -164,7 +208,11 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param contract.address Address of the contract
    * @param contract.abi ABI of the contract
    */
-  public registerContract(chainId: number, key: string, contract: Contract) {
+  public registerContract<ChainId extends OriginalChainId<OriginalConfig>>(
+    chainId: NumericUnion<ChainId>,
+    key: string,
+    contract: Contract
+  ) {
     this.getStore(chainId).registerContract(key, contract);
     return this;
   }
@@ -175,7 +223,10 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param key String key of the ABI
    * @param abi New ABI
    */
-  public updateAbi(chainId: number, key: string, abi: ABI) {
+  public updateAbi<
+    ChainId extends OriginalChainId<OriginalConfig>,
+    ABIKey extends OriginalABIKey<OriginalConfig, ChainId>
+  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>, abi: ABI) {
     if (this.globalAbis[key]) {
       throw new Error(
         `Key ${key} is associated to a global ABI. Please, use 'updateGlobalABI' in order to update it.`
@@ -191,7 +242,15 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param key String key of the deployment
    * @param abiKey The new ABI key of the deployment
    */
-  public updateDeployment(chainId: number, key: string, abiKey: string) {
+  public updateDeployment<
+    ChainId extends OriginalChainId<OriginalConfig>,
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig, ChainId>,
+    ABIKey extends OriginalABIKey<OriginalConfig, ChainId>
+  >(
+    chainId: NumericUnion<ChainId>,
+    key: LiteralUnion<DeploymentKey>,
+    abiKey: LiteralUnion<ABIKey>
+  ) {
     this.getStore(chainId).updateDeployment(key, abiKey);
     return this;
   }
@@ -201,7 +260,10 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param chainId Chain ID of the network
    * @param key String key of the deployment
    */
-  public deleteDeployment(chainId: number, key: string) {
+  public deleteDeployment<
+    ChainId extends OriginalChainId<OriginalConfig>,
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig, ChainId>
+  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<DeploymentKey>) {
     this.getStore(chainId).deleteDeployment(key);
     return this;
   }
@@ -211,7 +273,10 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param chainId Chain ID of the network
    * @param key String key of the ABI
    */
-  public deleteAbi(chainId: number, key: string) {
+  public deleteAbi<
+    ChainId extends OriginalChainId<OriginalConfig>,
+    ABIKey extends OriginalABIKey<OriginalConfig, ChainId>
+  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>) {
     if (this.globalAbis[key]) {
       throw new Error(
         `Key ${key} is associated to a global ABI. Please, use 'deleteGlobalABI' in order to delete it.`
@@ -226,7 +291,9 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param key String key of the ABI
    * @returns The ABI
    */
-  public getGlobalAbi(key: string) {
+  public getGlobalAbi<
+    GlobalABIKey extends OriginalGlobalABIKey<OriginalConfig>
+  >(key: LiteralUnion<GlobalABIKey>) {
     if (!this.globalAbis[key]) {
       throw new Error(`Key ${key} is not associated to a global ABI.`);
     }
@@ -239,7 +306,10 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param key String key of the ABI
    * @returns The ABI
    */
-  public getAbi(chainId: number, key: string) {
+  public getAbi<
+    ChainId extends OriginalChainId<OriginalConfig>,
+    ABIKey extends OriginalABIKey<OriginalConfig, ChainId>
+  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>) {
     return this.getStore(chainId).getAbi(key);
   }
 
@@ -249,7 +319,10 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param key String key of the deployment of the contract
    * @returns The address and ABI of the contract
    */
-  public getContract(chainId: number, key: string) {
+  public getContract<
+    ChainId extends OriginalChainId<OriginalConfig>,
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig, ChainId>
+  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<DeploymentKey>) {
     return this.getStore(chainId).getContract(key);
   }
 
@@ -259,7 +332,10 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param key String key of the deployment
    * @returns The address of the deployment
    */
-  public getAddress(chainId: number, key: string) {
+  public getAddress<
+    ChainId extends OriginalChainId<OriginalConfig>,
+    DeploymentKey extends OriginalDeploymentKey<OriginalConfig, ChainId>
+  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<DeploymentKey>) {
     return this.getStore(chainId).getAddress(key);
   }
 
@@ -268,11 +344,15 @@ export class MultiNetworkContractStore extends EventEmitter {
    * @param chainId Chain ID of the network
    * @returns The array of addresses
    */
-  public getAddresses(chainId: number) {
+  public getAddresses<ChainId extends OriginalChainId<OriginalConfig>>(
+    chainId: NumericUnion<ChainId>
+  ) {
     return this.getStore(chainId).getAddresses();
   }
 
-  private getStore(chainId: number) {
+  private getStore<ChainId extends OriginalChainId<OriginalConfig>>(
+    chainId: NumericUnion<ChainId>
+  ) {
     const store = this.stores[chainId];
     if (!store) {
       throw new Error(`Chain ID ${chainId} is not configured.`);
