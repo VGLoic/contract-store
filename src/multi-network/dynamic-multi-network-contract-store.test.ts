@@ -1,4 +1,4 @@
-import { MultiNetworkContractStore } from "../multi-network-contract-store";
+import { DynamicContractStore } from "./dynamic-multi-network-contract-store";
 import ERC20 from "../default-abis/erc20.json";
 import ERC721 from "../default-abis/erc721.json";
 import ERC1155 from "../default-abis/erc1155.json";
@@ -66,7 +66,7 @@ describe("Multi network contract store", () => {
 
   describe("initialization", () => {
     test("it should initialize according to the given configuration", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: {
           1: {
             abis: {
@@ -117,7 +117,7 @@ describe("Multi network contract store", () => {
 
   describe("network management", () => {
     test("it should contain the default abis as global ABI if not explictly written in the options", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
 
@@ -133,7 +133,7 @@ describe("Multi network contract store", () => {
     });
 
     test("it should not contain the default ABIs if specified in the options", () => {
-      const store = new MultiNetworkContractStore(
+      const store = new DynamicContractStore(
         { networks: { 1: {}, 2: {} } },
         {
           withoutDefaultABIs: true,
@@ -150,14 +150,14 @@ describe("Multi network contract store", () => {
     });
 
     test("`gerChainIds` should return the list of chain IDs", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       expect(store.getChainIds()).toEqual(chainIds);
     });
 
     test("`addNetwork` should add the chain ID with the global ABIs", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
 
@@ -168,14 +168,14 @@ describe("Multi network contract store", () => {
     });
 
     test("`addNetwork` should throw if the network is already configured", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       expect(() => store.addNetwork(2)).toThrow();
     });
 
     test("`removeNetwork` should delete the store associated to the chain ID", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.removeNetwork(1);
@@ -184,7 +184,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`removeNetwork` should throw if the network is not registered", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       expect(() => store.removeNetwork(24324234)).toThrow();
@@ -193,7 +193,7 @@ describe("Multi network contract store", () => {
 
   describe("ABI management", () => {
     test("`registerGlobalAbi` should register the ABI on every networks", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerGlobalAbi("FOO", testAbi);
@@ -205,7 +205,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`registerGlobalAbi` should throw if a global ABI with the same key exist", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerGlobalAbi("FOO", testAbi);
@@ -214,7 +214,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`registerGlobalAbi` should throw if an ABI with the same key exist on a network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerAbi(chainIds[0], "FOO", testAbi);
@@ -223,7 +223,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`updateGlobalABI` should update the ABI on every networks", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerGlobalAbi("FOO", testAbi);
@@ -237,14 +237,14 @@ describe("Multi network contract store", () => {
     });
 
     test("`updateGlobalABI` should throw if the key is not a global ABI", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       expect(() => store.updateGlobalAbi("FOO", otherTestAbi)).toThrow();
     });
 
     test("`deleteGlobalAbi` should delete the ABI on every network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerGlobalAbi("FOO", testAbi);
@@ -257,14 +257,14 @@ describe("Multi network contract store", () => {
     });
 
     test("`deleteGlobalABI` should throw if the key is not one of a global ABI", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       expect(() => store.deleteGlobalAbi("FOO")).toThrow();
     });
 
     test("`deleteGlobalABI` should throw if the ABI is used in a deployment", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerGlobalAbi("FOO", testAbi);
@@ -277,7 +277,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`registerAbi` should register the ABI on the proper network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerAbi(chainIds[0], "FOO", testAbi);
@@ -285,7 +285,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`registerAbi` should throw if the key already exists as global", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerGlobalAbi("FOO", testAbi);
@@ -296,7 +296,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`updateAbi` should update the ABI on the proper network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerAbi(chainIds[0], "FOO", testAbi);
@@ -305,7 +305,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`updateAbi` should throw if the key is associated to a global ABI", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerGlobalAbi("FOO", testAbi);
@@ -314,7 +314,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`deleteAbi` should delete the ABI on the proper network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerAbi(chainIds[0], "FOO", testAbi);
@@ -324,7 +324,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`deleteAbi` should throw if the key is associated to a global ABI", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
       store.registerGlobalAbi("FOO", testAbi);
@@ -335,7 +335,7 @@ describe("Multi network contract store", () => {
 
   describe("Deployment management", () => {
     test("`registerDeployment` should register a deployment on the proper network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
 
@@ -352,7 +352,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`registerContract` should register a deployment and an ABI on the proper network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
 
@@ -370,7 +370,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`updateDeployment` should update the deployment on the proper network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
 
@@ -389,7 +389,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`deleteDeployment` should delete the deployment on the proper network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
 
@@ -405,7 +405,7 @@ describe("Multi network contract store", () => {
     });
 
     test("`getAddresses` should get the deployments addresses on the proper network", () => {
-      const store = new MultiNetworkContractStore({
+      const store = new DynamicContractStore({
         networks: { 1: {}, 2: {} },
       });
 
