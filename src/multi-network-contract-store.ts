@@ -10,16 +10,29 @@ type MultiNetworkOptions = {
 };
 
 type Network = {
-  abis?: Record<string, unknown>;
-  deployments?: Record<string, unknown>;
+  abis?: Record<string, ABI>;
+  deployments?: Record<string, Deployment>;
 };
 type GenericConfiguration = {
-  globalAbis?: Record<string, unknown>;
-  networks?: Record<number, Network>;
+  globalAbis?: Record<string, ABI>;
+  networks: Record<number, Network>;
 };
 
-type OriginalGlobalABIKey<Config extends GenericConfiguration> = Extract<
-  keyof Config["globalAbis"],
+type WithoutDefaultABIs<Opts extends MultiNetworkOptions | undefined> =
+  Opts extends MultiNetworkOptions
+    ? Opts["withoutDefaultABIs"] extends true
+      ? true
+      : false
+    : false;
+
+type OriginalGlobalABIKey<
+  Config extends GenericConfiguration,
+  Opts extends MultiNetworkOptions
+> = Extract<
+  | keyof Config["globalAbis"]
+  | (WithoutDefaultABIs<Opts> extends true
+      ? keyof {}
+      : "ERC20" | "ERC721" | "ERC1155"),
   string
 >;
 type OriginalChainId<Config extends GenericConfiguration> = Extract<
@@ -34,35 +47,69 @@ type OriginalDeploymentKey<
   : never;
 type OriginalABIKey<
   Config extends GenericConfiguration,
-  ChainId extends OriginalChainId<Config>
+  ChainId extends OriginalChainId<Config>,
+  Opts extends MultiNetworkOptions
 > = Config["networks"][ChainId] extends Network
-  ? Extract<keyof Config["networks"][ChainId]["abis"], string>
+  ? Extract<
+      | keyof Config["networks"][ChainId]["abis"]
+      | keyof Config["globalAbis"]
+      | (WithoutDefaultABIs<Opts> extends true
+          ? keyof {}
+          : "ERC20" | "ERC721" | "ERC1155"),
+      string
+    >
   : never;
 
 /**
  * Contract store for managing ABIs and deployments on multiple networks
  */
 export class MultiNetworkContractStore<
+  Opts extends MultiNetworkOptions,
   OriginalConfig extends GenericConfiguration
 > extends EventEmitter {
-  private stores: Record<number, ContractStore>;
+  private stores: Record<number, ContractStore<Opts>>;
   private globalAbis: Record<string, ABI> = {};
 
-  constructor(chainIds: number[], opts?: MultiNetworkOptions) {
+  constructor(originalConfig: OriginalConfig, opts?: Opts) {
     super();
-    const stores = Array.from(new Set(chainIds)).reduce(
-      (acc, chainId) => ({
+    const chainIds = Object.keys(originalConfig.networks);
+    const stores = chainIds.reduce((acc, chainId) => {
+      return {
         ...acc,
-        [chainId]: new ContractStore(chainId, { withoutDefaultABIs: true }),
-      }),
-      {} as Record<number, ContractStore>
-    );
+        [chainId]: new ContractStore(
+          Number(chainId),
+          {},
+          { withoutDefaultABIs: true }
+        ),
+      };
+    }, {} as Record<OriginalChainId<OriginalConfig>, ContractStore<Opts>>);
     this.stores = stores;
     if (!opts?.withoutDefaultABIs) {
       this.registerGlobalAbi("ERC20", ERC20);
       this.registerGlobalAbi("ERC721", ERC721);
       this.registerGlobalAbi("ERC1155", ERC1155);
     }
+    if (originalConfig.globalAbis) {
+      Object.entries(originalConfig.globalAbis).forEach(([key, abi]) => {
+        this.registerGlobalAbi(key, abi);
+      });
+    }
+    chainIds.forEach((chainId) => {
+      const formattedChainId = Number(chainId);
+      const networkConfig = originalConfig.networks[formattedChainId];
+      if (networkConfig.abis) {
+        Object.entries(networkConfig.abis).forEach(([key, abi]) => {
+          this.registerAbi(formattedChainId, key, abi);
+        });
+      }
+      if (networkConfig.deployments) {
+        Object.entries(networkConfig.deployments).forEach(
+          ([key, deployment]) => {
+            this.registerDeployment(formattedChainId, key, deployment);
+          }
+        );
+      }
+    });
   }
 
   /**
@@ -81,7 +128,7 @@ export class MultiNetworkContractStore<
     if (this.stores[chainId]) {
       throw new Error(`Chain ID ${chainId} is already configured.`);
     }
-    const store = new ContractStore(chainId, { withoutDefaultABIs: true });
+    const store = new ContractStore(chainId, {}, { withoutDefaultABIs: true });
     Object.entries(this.globalAbis).forEach(([key, abi]) => {
       store.registerAbi(key, abi);
     });
@@ -128,10 +175,9 @@ export class MultiNetworkContractStore<
    * @param key String key of the ABI
    * @param abi ABI
    */
-  public updateGlobalAbi<KeyType extends OriginalGlobalABIKey<OriginalConfig>>(
-    key: LiteralUnion<KeyType>,
-    abi: ABI
-  ) {
+  public updateGlobalAbi<
+    KeyType extends OriginalGlobalABIKey<OriginalConfig, Opts>
+  >(key: LiteralUnion<KeyType>, abi: ABI) {
     if (!this.globalAbis[key]) {
       throw new Error(`No global ABI for key ${key} has been found.`);
     }
@@ -146,9 +192,9 @@ export class MultiNetworkContractStore<
    * Delete a global ABI, replicating the delete in every networks
    * @param key String key of the ABI
    */
-  public deleteGlobalAbi<KeyType extends OriginalGlobalABIKey<OriginalConfig>>(
-    key: LiteralUnion<KeyType>
-  ) {
+  public deleteGlobalAbi<
+    KeyType extends OriginalGlobalABIKey<OriginalConfig, Opts>
+  >(key: LiteralUnion<KeyType>) {
     if (!this.globalAbis[key]) {
       throw new Error(`No global ABI for key ${key} has been found.`);
     }
@@ -192,7 +238,7 @@ export class MultiNetworkContractStore<
    * @param deployment.address Address of the contract
    * @param deployment.abiKey String key of the already registered ABI
    */
-  public registerDeployement<ChainId extends OriginalChainId<OriginalConfig>>(
+  public registerDeployment<ChainId extends OriginalChainId<OriginalConfig>>(
     chainId: NumericUnion<ChainId>,
     key: string,
     deployment: Deployment
@@ -225,7 +271,7 @@ export class MultiNetworkContractStore<
    */
   public updateAbi<
     ChainId extends OriginalChainId<OriginalConfig>,
-    ABIKey extends OriginalABIKey<OriginalConfig, ChainId>
+    ABIKey extends OriginalABIKey<OriginalConfig, ChainId, Opts>
   >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>, abi: ABI) {
     if (this.globalAbis[key]) {
       throw new Error(
@@ -245,7 +291,7 @@ export class MultiNetworkContractStore<
   public updateDeployment<
     ChainId extends OriginalChainId<OriginalConfig>,
     DeploymentKey extends OriginalDeploymentKey<OriginalConfig, ChainId>,
-    ABIKey extends OriginalABIKey<OriginalConfig, ChainId>
+    ABIKey extends OriginalABIKey<OriginalConfig, ChainId, Opts>
   >(
     chainId: NumericUnion<ChainId>,
     key: LiteralUnion<DeploymentKey>,
@@ -275,7 +321,7 @@ export class MultiNetworkContractStore<
    */
   public deleteAbi<
     ChainId extends OriginalChainId<OriginalConfig>,
-    ABIKey extends OriginalABIKey<OriginalConfig, ChainId>
+    ABIKey extends OriginalABIKey<OriginalConfig, ChainId, Opts>
   >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>) {
     if (this.globalAbis[key]) {
       throw new Error(
@@ -292,7 +338,7 @@ export class MultiNetworkContractStore<
    * @returns The ABI
    */
   public getGlobalAbi<
-    GlobalABIKey extends OriginalGlobalABIKey<OriginalConfig>
+    GlobalABIKey extends OriginalGlobalABIKey<OriginalConfig, Opts>
   >(key: LiteralUnion<GlobalABIKey>) {
     if (!this.globalAbis[key]) {
       throw new Error(`Key ${key} is not associated to a global ABI.`);
@@ -308,7 +354,7 @@ export class MultiNetworkContractStore<
    */
   public getAbi<
     ChainId extends OriginalChainId<OriginalConfig>,
-    ABIKey extends OriginalABIKey<OriginalConfig, ChainId>
+    ABIKey extends OriginalABIKey<OriginalConfig, ChainId, Opts>
   >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>) {
     return this.getStore(chainId).getAbi(key);
   }
