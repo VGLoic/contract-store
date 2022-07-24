@@ -152,29 +152,6 @@ const networks = {
 
 The contract store already comes with registered ABIs `ERC20`, `ERC721` and `ERC1155` standard ABIs. The ABIs have been generated using [Open Zeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts) implementations.
 
-<!-- ```ts
-import { MultiNetworkContractStore } from 'contract-store';
-
-const networks = { goerli: 5 };
-const store = new MultiNetworkContractStore([
-    networks.goerli
-]);
-
-// Register a deployment at key 'BAR' with the default ERC20 ABI on Goerli network
-store.registerDeployment(networks.goerli, 'BAR', {
-    address: '0x5A22EA0DC6553267bDB273eB55Ccb40EFA78F804',
-    // ERC20, ERC721 and ERC1155 abis are by default included in the store
-    abiKey: 'ERC20'
-});
-
-...
-
-// ABI and deployment address can then be retrieved anywhere
-const tokenArtifacts = store.getContract(networks.goerli, 'BAR');
-// `buildContract` is an arbitrary function used as an example here
-const token = buildContract(tokenArtifacts.address, tokenArtifacts.abi); -->
-<!-- ``` -->
-
 ## Dynamic Contract Store
 
 The `DynamicContractStore` follows the same principles than the `ContractStore` except that it allows to dynamically register, update or remove any global ABI, ABI or deployments.
