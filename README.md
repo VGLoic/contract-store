@@ -157,10 +157,10 @@ The contract store already comes with registered ABIs `ERC20`, `ERC721` and `ERC
 The `DynamicContractStore` follows the same principles than the `ContractStore` except that it allows to dynamically register, update or remove any global ABI, ABI or deployments.
 
 ```ts
-import { Dynamic } from 'contract-store';
+import { DynamicContractStore } from 'contract-store';
 
 const networks = { mainnet: 1, goerli: 5 }
-const store = new Dynamic({
+const store = new DynamicContractStore({
     globalAbis: { },
     networks: {
         [networks.mainnet]: {
