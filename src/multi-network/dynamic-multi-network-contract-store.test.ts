@@ -67,6 +67,9 @@ describe("Multi network contract store", () => {
   describe("initialization", () => {
     test("it should initialize according to the given configuration", () => {
       const store = new DynamicContractStore({
+        globalAbis: {
+          GLOB: testAbi,
+        },
         networks: {
           1: {
             abis: {
@@ -101,6 +104,7 @@ describe("Multi network contract store", () => {
       expect(store.getGlobalAbi("ERC20")).toEqual(ERC20);
       expect(store.getGlobalAbi("ERC721")).toEqual(ERC721);
       expect(store.getGlobalAbi("ERC1155")).toEqual(ERC1155);
+      expect(store.getGlobalAbi("GLOB")).toEqual(testAbi);
 
       expect(store.getAbi(1, "FOO")).toEqual(testAbi);
       expect(store.getContract(1, "BAR")).toEqual({

@@ -73,17 +73,23 @@ export class ContractStore<
   Opts extends MultiNetworkOptions
 > {
   private stores;
-  private globalAbis: GlobalABIs;
+  private globalAbis;
 
   constructor(config: Configuration<GlobalABIs, Networks>, opts?: Opts) {
     const chainIds = Object.keys(config.networks);
 
-    this.globalAbis = config.globalAbis;
+    const globalAbis: Record<string, ABI> = { ...config.globalAbis };
+    if (!opts?.withoutDefaultABIs) {
+      globalAbis["ERC20"] = ERC20;
+      globalAbis["ERC721"] = ERC721;
+      globalAbis["ERC1155"] = ERC1155;
+    }
+    this.globalAbis = globalAbis;
 
     const stores = chainIds.reduce((acc, chainId) => {
       const formattedChainId = Number(chainId);
       const networkConfig = config.networks[formattedChainId];
-      const abis: Record<string, ABI> = config.globalAbis || {};
+      const abis: Record<string, ABI> = { ...config.globalAbis };
       if (!opts?.withoutDefaultABIs) {
         abis["ERC20"] = ERC20;
         abis["ERC721"] = ERC721;
