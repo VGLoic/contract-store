@@ -1,25 +1,9 @@
 import EventEmitter from "events";
-import { JsonFragment } from "./ethers-type";
-import ERC20 from "./default-abis/erc20.json";
-import ERC721 from "./default-abis/erc721.json";
-import ERC1155 from "./default-abis/erc1155.json";
-import { LiteralUnion } from "./helper-types";
-
-export type ABI = string | readonly (string | JsonFragment)[];
-
-export type Deployment = {
-  address: string;
-  abiKey: string;
-};
-
-export type Contract = {
-  address: string;
-  abi: ABI;
-};
-
-export type Options = {
-  withoutDefaultABIs?: boolean;
-};
+import ERC20 from "../default-abis/erc20.json";
+import ERC721 from "../default-abis/erc721.json";
+import ERC1155 from "../default-abis/erc1155.json";
+import { ABI, Contract, Deployment, LiteralUnion } from "../helper-types";
+import { Options } from "./common-types";
 
 type GenericConfiguration = {
   abis?: Record<string, ABI>;
@@ -48,9 +32,9 @@ type OriginalABIKey<
 >;
 
 /**
- * Contract Store for managing ABIs and deployments on a single network
+ * Dynamic Contract Store for managing ABIs and deployments on a single network
  */
-export class ContractStore<
+export class DynamicSingleNetworkContractStore<
   Opts extends Options | undefined,
   OriginalConfig extends GenericConfiguration = {}
 > extends EventEmitter {

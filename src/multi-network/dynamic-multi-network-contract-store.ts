@@ -1,9 +1,15 @@
 import EventEmitter from "events";
-import { ABI, Contract, ContractStore, Deployment } from "./contract-store";
-import ERC20 from "./default-abis/erc20.json";
-import ERC721 from "./default-abis/erc721.json";
-import ERC1155 from "./default-abis/erc1155.json";
-import { NumericUnion, LiteralUnion } from "./helper-types";
+import { DynamicSingleNetworkContractStore } from "../single-network";
+import ERC20 from "../default-abis/erc20.json";
+import ERC721 from "../default-abis/erc721.json";
+import ERC1155 from "../default-abis/erc1155.json";
+import {
+  NumericUnion,
+  LiteralUnion,
+  Deployment,
+  ABI,
+  Contract,
+} from "../helper-types";
 
 type MultiNetworkOptions = {
   withoutDefaultABIs?: boolean;
@@ -63,11 +69,11 @@ type OriginalABIKey<
 /**
  * Contract store for managing ABIs and deployments on multiple networks
  */
-export class MultiNetworkContractStore<
+export class DynamicContractStore<
   Opts extends MultiNetworkOptions,
   OriginalConfig extends GenericConfiguration
 > extends EventEmitter {
-  private stores: Record<number, ContractStore<Opts>>;
+  private stores: Record<number, DynamicSingleNetworkContractStore<Opts>>;
   private globalAbis: Record<string, ABI> = {};
 
   constructor(originalConfig: OriginalConfig, opts?: Opts) {
@@ -76,13 +82,13 @@ export class MultiNetworkContractStore<
     const stores = chainIds.reduce((acc, chainId) => {
       return {
         ...acc,
-        [chainId]: new ContractStore(
+        [chainId]: new DynamicSingleNetworkContractStore(
           Number(chainId),
           {},
           { withoutDefaultABIs: true }
         ),
       };
-    }, {} as Record<OriginalChainId<OriginalConfig>, ContractStore<Opts>>);
+    }, {} as Record<OriginalChainId<OriginalConfig>, DynamicSingleNetworkContractStore<Opts>>);
     this.stores = stores;
     if (!opts?.withoutDefaultABIs) {
       this.registerGlobalAbi("ERC20", ERC20);
@@ -128,7 +134,11 @@ export class MultiNetworkContractStore<
     if (this.stores[chainId]) {
       throw new Error(`Chain ID ${chainId} is already configured.`);
     }
-    const store = new ContractStore(chainId, {}, { withoutDefaultABIs: true });
+    const store = new DynamicSingleNetworkContractStore(
+      chainId,
+      {},
+      { withoutDefaultABIs: true }
+    );
     Object.entries(this.globalAbis).forEach(([key, abi]) => {
       store.registerAbi(key, abi);
     });
