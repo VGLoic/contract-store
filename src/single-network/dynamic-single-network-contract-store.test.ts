@@ -83,6 +83,21 @@ describe("Dynamic Single Network Contract Store", () => {
         address,
         abi: ERC20,
       });
+
+      expect(store.toObject()).toEqual({
+        abis: {
+          FOO: testAbi,
+          ERC20,
+          ERC721,
+          ERC1155,
+        },
+        deployments: {
+          BAR: {
+            abiKey: "ERC20",
+            address,
+          },
+        },
+      });
     });
   });
 

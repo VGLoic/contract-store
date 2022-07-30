@@ -406,6 +406,21 @@ export class DynamicContractStore<
     return this.getStore(chainId).getAddresses();
   }
 
+  /**
+   * Convert the store to an object
+   * @returns The store abis and deployments by networks with the global abis
+   */
+  public toObject() {
+    const chainIds = this.getChainIds();
+    return {
+      globalAbis: this.globalAbis,
+      networks: chainIds.reduce((acc, chainId) => {
+        acc[chainId] = this.getStore(chainId).toObject();
+        return acc;
+      }, {} as Record<number, Network>),
+    };
+  }
+
   private getStore<ChainId extends OriginalChainId<OriginalConfig>>(
     chainId: NumericUnion<ChainId>
   ) {

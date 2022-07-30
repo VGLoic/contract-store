@@ -123,6 +123,46 @@ describe("Dynamic Multi network contract store", () => {
       });
       expect(store.getAddress(2, "BAR2")).toEqual(address);
       expect(() => store.getAddresses(3 as 1)).toThrow();
+      expect(store.toObject()).toEqual({
+        globalAbis: {
+          GLOB: testAbi,
+          ERC20,
+          ERC721,
+          ERC1155,
+        },
+        networks: {
+          1: {
+            abis: {
+              FOO: testAbi,
+              GLOB: testAbi,
+              ERC20,
+              ERC721,
+              ERC1155,
+            },
+            deployments: {
+              BAR: {
+                abiKey: "ERC20",
+                address,
+              },
+            },
+          },
+          2: {
+            abis: {
+              FOO2: otherTestAbi,
+              GLOB: testAbi,
+              ERC20,
+              ERC721,
+              ERC1155,
+            },
+            deployments: {
+              BAR2: {
+                abiKey: "FOO2",
+                address,
+              },
+            },
+          },
+        },
+      });
     });
 
     test("it should not include the default ABIs if specified", () => {
