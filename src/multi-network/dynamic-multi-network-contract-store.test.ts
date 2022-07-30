@@ -116,6 +116,46 @@ describe("Multi network contract store", () => {
         address,
         abi: otherTestAbi,
       });
+      expect(store.toObject()).toEqual({
+        globalAbis: {
+          GLOB: testAbi,
+          ERC20,
+          ERC721,
+          ERC1155,
+        },
+        networks: {
+          1: {
+            abis: {
+              FOO: testAbi,
+              GLOB: testAbi,
+              ERC20,
+              ERC721,
+              ERC1155,
+            },
+            deployments: {
+              BAR: {
+                abiKey: "ERC20",
+                address,
+              },
+            },
+          },
+          2: {
+            abis: {
+              FOO2: otherTestAbi,
+              GLOB: testAbi,
+              ERC20,
+              ERC721,
+              ERC1155,
+            },
+            deployments: {
+              BAR2: {
+                abiKey: "FOO2",
+                address,
+              },
+            },
+          },
+        },
+      });
     });
   });
 

@@ -123,7 +123,7 @@ export class ContractStore<
    * @returns The array of configured chain IDs
    */
   public getChainIds() {
-    return Object.keys(this.stores).map(Number);
+    return Object.keys(this.stores).map(Number) as AllowedChainId<Networks>[];
   }
 
   /**
@@ -184,6 +184,21 @@ export class ContractStore<
    */
   public getAddresses(chainId: AllowedChainId<Networks>) {
     return this.getStore(chainId).getAddresses();
+  }
+
+  /**
+   * Convert the store to an object
+   * @returns The store abis and deployments by networks with the global abis
+   */
+  public toObject() {
+    const chainIds = this.getChainIds();
+    return {
+      globalAbis: this.globalAbis,
+      networks: chainIds.reduce((acc, chainId) => {
+        acc[chainId] = this.getStore(chainId).toObject();
+        return acc;
+      }, {} as Record<AllowedChainId<Networks>, Network>),
+    };
   }
 
   private getStore(chainId: AllowedChainId<Networks>) {

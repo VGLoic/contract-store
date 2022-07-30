@@ -268,6 +268,17 @@ export class DynamicSingleNetworkContractStore<
   }
 
   /**
+   * Convert the store to an object
+   * @returns The store abis and deployments
+   */
+  public toObject() {
+    return {
+      abis: this.abis,
+      deployments: this.deployments,
+    };
+  }
+
+  /**
    * Get a deployment
    * @param key String key of the deployment
    * @returns The deployment

@@ -56,6 +56,21 @@ describe("Static Single Network Contract Store", () => {
     expect(store.getAddress("BAR")).toEqual(address);
     expect(store.getAddresses()).toEqual([address]);
     expect(() => store.getContract("BAR2" as "BAR")).toThrow();
+
+    expect(store.toObject()).toEqual({
+      abis: {
+        FOO: testAbi,
+        ERC20: ERC20,
+        ERC721: ERC721,
+        ERC1155: ERC1155,
+      },
+      deployments: {
+        BAR: {
+          abiKey: "ERC20",
+          address,
+        },
+      },
+    });
   });
 
   test("it should fail to if a deployment is given with an unknown ABI key", () => {
