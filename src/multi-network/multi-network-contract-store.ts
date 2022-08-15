@@ -6,8 +6,8 @@ import { Deployment, ABI, Contract } from "../helper-types";
 import { MultiNetworkOptions } from "./common-types";
 
 type Network = {
-  abis: Record<string, ABI>;
-  deployments: Record<string, Deployment>;
+  abis?: Record<string, ABI>;
+  deployments?: Record<string, Deployment>;
 };
 
 type WithoutDefaultABIs<Opts extends MultiNetworkOptions | undefined> =
@@ -19,7 +19,7 @@ type WithoutDefaultABIs<Opts extends MultiNetworkOptions | undefined> =
 
 type GlobalABIKey<
   GlobalABIs extends Record<string, ABI>,
-  Opts extends MultiNetworkOptions
+  Opts extends MultiNetworkOptions | undefined
 > = Extract<
   | keyof GlobalABIs
   | (WithoutDefaultABIs<Opts> extends true
@@ -41,10 +41,10 @@ type DeploymentKey<
   : never;
 
 type ABIKey<
-  GlobalABIs extends Record<string, ABI>,
+  GlobalABIs extends Record<string, ABI> | undefined,
   Networks extends Record<number, Network>,
   ChainId extends AllowedChainId<Networks>,
-  Opts extends MultiNetworkOptions
+  Opts extends MultiNetworkOptions | undefined
 > = Networks[ChainId] extends Network
   ? Extract<
       | keyof Networks[ChainId]["abis"]
@@ -60,7 +60,7 @@ type Configuration<
   GlobalABIs extends Record<string, ABI>,
   Networks extends Record<number, Network>
 > = {
-  globalAbis: GlobalABIs;
+  globalAbis?: GlobalABIs;
   networks: Networks;
 };
 
@@ -68,9 +68,9 @@ type Configuration<
  * Static Contract store for managing ABIs and deployments on multiple networks
  */
 export class ContractStore<
-  GlobalABIs extends Record<string, ABI>,
-  Networks extends Record<number, Network>,
-  Opts extends MultiNetworkOptions
+  GlobalABIs extends Record<string, ABI> = {},
+  Networks extends Record<number, Network> = {},
+  Opts extends MultiNetworkOptions | undefined = undefined
 > {
   private stores;
   private globalAbis;
@@ -95,7 +95,7 @@ export class ContractStore<
         abis["ERC721"] = ERC721;
         abis["ERC1155"] = ERC1155;
       }
-      Object.entries(networkConfig.abis).forEach(([key, abi]) => {
+      Object.entries({ ...networkConfig.abis }).forEach(([key, abi]) => {
         if (abis[key]) {
           throw new Error(
             `An ABI already exists for key ${key} and chain ID ${chainId}`

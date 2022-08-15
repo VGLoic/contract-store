@@ -33,7 +33,7 @@ type WithoutDefaultABIs<Opts extends MultiNetworkOptions | undefined> =
 
 type OriginalGlobalABIKey<
   Config extends GenericConfiguration,
-  Opts extends MultiNetworkOptions
+  Opts extends MultiNetworkOptions | undefined
 > = Extract<
   | keyof Config["globalAbis"]
   | (WithoutDefaultABIs<Opts> extends true
@@ -54,7 +54,7 @@ type OriginalDeploymentKey<
 type OriginalABIKey<
   Config extends GenericConfiguration,
   ChainId extends OriginalChainId<Config>,
-  Opts extends MultiNetworkOptions
+  Opts extends MultiNetworkOptions | undefined
 > = Config["networks"][ChainId] extends Network
   ? Extract<
       | keyof Config["networks"][ChainId]["abis"]

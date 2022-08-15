@@ -32,8 +32,8 @@ type Configuration<
   Opts extends Options | undefined,
   Deployments extends Record<string, Deployment<ABIKey<ABIs, Opts>>>
 > = {
-  abis: ABIs;
-  deployments: Deployments;
+  abis?: ABIs;
+  deployments?: Deployments;
 };
 
 /**
