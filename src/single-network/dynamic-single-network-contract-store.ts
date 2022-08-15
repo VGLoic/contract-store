@@ -219,7 +219,7 @@ export class DynamicSingleNetworkContractStore<
    */
   public getAbi<ABIKey extends OriginalABIKey<OriginalConfig, Opts>>(
     key: LiteralUnion<ABIKey>
-  ) {
+  ): ABI {
     const abi = this.abis[key];
     if (!abi) {
       throw new Error(

@@ -88,7 +88,7 @@ export class SingleNetworkContractStore<
    * @param key String key of the ABI
    * @returns The ABI
    */
-  public getAbi(key: ABIKey<ABIs, Opts>) {
+  public getAbi(key: ABIKey<ABIs, Opts>): ABI {
     const abi = this.abis[key];
     if (!abi) {
       throw new Error(

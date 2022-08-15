@@ -131,7 +131,7 @@ export class ContractStore<
    * @param key String key of the ABI
    * @returns The ABI
    */
-  public getGlobalAbi(key: GlobalABIKey<GlobalABIs, Opts>) {
+  public getGlobalAbi(key: GlobalABIKey<GlobalABIs, Opts>): ABI {
     if (!this.globalAbis[key]) {
       throw new Error(`Key ${key} is not associated to a global ABI.`);
     }
@@ -147,7 +147,7 @@ export class ContractStore<
   public getAbi<ChainId extends AllowedChainId<Networks>>(
     chainId: ChainId,
     key: ABIKey<GlobalABIs, Networks, ChainId, Opts>
-  ) {
+  ): ABI {
     return this.getStore(chainId).getAbi(key as never);
   }
 

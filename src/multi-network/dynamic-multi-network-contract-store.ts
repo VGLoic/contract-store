@@ -349,7 +349,7 @@ export class DynamicContractStore<
    */
   public getGlobalAbi<
     GlobalABIKey extends OriginalGlobalABIKey<OriginalConfig, Opts>
-  >(key: LiteralUnion<GlobalABIKey>) {
+  >(key: LiteralUnion<GlobalABIKey>): ABI {
     if (!this.globalAbis[key]) {
       throw new Error(`Key ${key} is not associated to a global ABI.`);
     }
@@ -365,7 +365,7 @@ export class DynamicContractStore<
   public getAbi<
     ChainId extends OriginalChainId<OriginalConfig>,
     ABIKey extends OriginalABIKey<OriginalConfig, ChainId, Opts>
-  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>) {
+  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>): ABI {
     return this.getStore(chainId).getAbi(key);
   }
 
