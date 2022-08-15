@@ -33,7 +33,7 @@ type WithoutDefaultABIs<Opts extends MultiNetworkOptions | undefined> =
 
 type OriginalGlobalABIKey<
   Config extends GenericConfiguration,
-  Opts extends MultiNetworkOptions
+  Opts extends MultiNetworkOptions | undefined
 > = Extract<
   | keyof Config["globalAbis"]
   | (WithoutDefaultABIs<Opts> extends true
@@ -54,7 +54,7 @@ type OriginalDeploymentKey<
 type OriginalABIKey<
   Config extends GenericConfiguration,
   ChainId extends OriginalChainId<Config>,
-  Opts extends MultiNetworkOptions
+  Opts extends MultiNetworkOptions | undefined
 > = Config["networks"][ChainId] extends Network
   ? Extract<
       | keyof Config["networks"][ChainId]["abis"]
@@ -349,7 +349,7 @@ export class DynamicContractStore<
    */
   public getGlobalAbi<
     GlobalABIKey extends OriginalGlobalABIKey<OriginalConfig, Opts>
-  >(key: LiteralUnion<GlobalABIKey>) {
+  >(key: LiteralUnion<GlobalABIKey>): ABI {
     if (!this.globalAbis[key]) {
       throw new Error(`Key ${key} is not associated to a global ABI.`);
     }
@@ -365,7 +365,7 @@ export class DynamicContractStore<
   public getAbi<
     ChainId extends OriginalChainId<OriginalConfig>,
     ABIKey extends OriginalABIKey<OriginalConfig, ChainId, Opts>
-  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>) {
+  >(chainId: NumericUnion<ChainId>, key: LiteralUnion<ABIKey>): ABI {
     return this.getStore(chainId).getAbi(key);
   }
 
